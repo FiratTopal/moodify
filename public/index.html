@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moodify</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <meta name="description" content="Yapay zeka destekli yüz ve duygu analiz sistemine dayalı kişiselleştirilmiş müzik keşif platformu.">
+  <meta name="keywords" content="müzik, yapay zeka, duygu analizi, spotify, moodify">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0a0a0b;
+      --surface: #121214;
+      --surface-elevated: #1c1c1f;
+      --border: rgba(255, 255, 255, 0.08);
+      --glass-bg: rgba(18, 18, 20, 0.65);
+      
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --success: #10b981;
+      
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      
+      --mood-happy: #f59e0b;
+      --mood-sad: #3b82f6;
+      --mood-angry: #ef4444;
+      --mood-surprised: #f97316;
+      --mood-fearful: #a855f7;
+      --mood-disgusted: #22c55e;
+      --mood-neutral: #64748b;
+      --mood-calm: #06b6d4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); overflow-x: hidden; scroll-behavior: smooth; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 600; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Hash Router Views */
+    .view { display: none; width: 100%; min-height: calc(100vh - 80px); }
+    .view.active { display: flex; flex-direction: column; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Buttons */
+    button, .btn {
+      font-family: 'Inter', sans-serif; font-weight: 500; cursor: pointer; border: none; outline: none;
+      transition: all 0.2s; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; padding: 0.75rem 1.5rem; }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 0.75rem 1.5rem; }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+    /* Auth Layout */
+    #view-login { display: none; min-height: 100vh; align-items: center; justify-content: center; background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.15), transparent 40%); }
+    #view-login.active { display: flex; }
+    .auth-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border);
+      padding: 3rem; border-radius: 24px; width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .auth-logo { font-size: 2.5rem; margin-bottom: 2rem; text-align: center; color: #fff; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .form-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: #fff; padding: 0.875rem 1rem; border-radius: 8px; font-family: 'Inter'; }
+    .form-input:focus { border-color: var(--accent); outline: none; }
+    .auth-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); }
+    .auth-tab { background: transparent; color: var(--text-muted); padding: 0.5rem; font-size: 1rem; border-radius: 0; }
+    .auth-tab.active { color: #fff; border-bottom: 2px solid var(--accent); }
+
+    /* Header / Navbar */
+    .header {
+      height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 3rem;
+      background: rgba(10, 10, 11, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo-container { display: flex; align-items: center; gap: 2rem; }
+    .logo-brand { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-style: italic; color: #fff; text-decoration: none; }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-link { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-link:hover, .nav-link.active { color: #fff; }
+
+    .user-menu { position: relative; cursor: pointer; }
+    .avatar-btn { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); padding: 0; background: transparent; }
+    .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+    .dropdown {
+      position: absolute; top: 120%; right: 0; background: var(--surface-elevated); border: 1px solid var(--border);
+      border-radius: 12px; width: 180px; display: none; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .dropdown.show { display: flex; }
+    .dropdown-item { padding: 0.875rem 1.25rem; color: var(--text-main); text-align: left; background: transparent; border-radius: 0; font-size: 0.9rem; text-decoration: none; }
+    .dropdown-item:hover { background: rgba(255,255,255,0.05); }
+
+    /* Dashboard View */
+    .container { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; width: 100%; }
+    .hero-section {
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(99, 102, 241, 0.05) 100%);
+      border: 1px solid var(--border); border-radius: 24px; padding: 3rem; margin-bottom: 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .hero-text h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .hero-text p { color: var(--text-muted); font-size: 1.1rem; max-width: 500px; margin-bottom: 2rem; line-height: 1.6; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; }
+    .stat-val { font-size: 2rem; font-weight: 600; color: var(--accent); margin-bottom: 0.25rem; }
+    .stat-label { font-size: 0.875rem; color: var(--text-muted); }
+
+    .section-title { font-size: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    
+    .chart-row { display: flex; align-items: center; margin-bottom: 1rem; }
+    .chart-label { width: 100px; font-size: 0.875rem; color: var(--text-muted); }
+    .chart-bar-bg { flex: 1; height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin: 0 1rem; overflow: hidden; }
+    .chart-bar-fill { height: 100%; width: 0%; transition: width 1s ease; border-radius: 6px; }
+    .chart-pct { width: 50px; text-align: right; font-size: 0.875rem; font-family: 'JetBrains Mono'; color: var(--text-muted); }
+
+    /* Analyze View */
+    .analyze-layout { display: flex; gap: 3rem; }
+    .analyze-left { flex: 1.2; display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+    .analyze-right { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: relative; overflow: hidden; min-width: 0;}
+    
+    @media (max-width: 900px) {
+      .analyze-layout { flex-direction: column; }
+    }
+    
+    .video-wrapper {
+      width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; border: 1px solid var(--border);
+      overflow: hidden; position: relative;
+    }
+    #kamera-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    
+    .genre-selector { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) rgba(255,255,255,0.05); }
+    .genre-selector::-webkit-scrollbar { height: 6px; }
+    .genre-selector::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+    .genre-selector::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    .genre-selector::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    
+    .genre-pill { padding: 0.5rem 1.25rem; border-radius: 9999px; background: rgba(255,255,255,0.05); border: 1px solid transparent; color: var(--text-muted); font-size: 0.875rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .genre-pill:hover { background: rgba(255,255,255,0.1); }
+    .genre-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .emotion-emoji { font-size: 5rem; margin-bottom: 1rem; }
+    .emotion-title { font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem; }
+    .emotion-desc { color: var(--text-muted); line-height: 1.6; }
+
+    .songs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .song-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s; overflow: hidden; }
+    .song-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+    .song-cover { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .song-info { flex: 1; overflow: hidden; min-width: 0; }
+    .song-title { font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.25rem; }
+    .song-artist { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* History View */
+    .history-card { background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 16px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .history-date { font-family: 'JetBrains Mono'; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 0.5rem;}
+    
+    /* Overlay */
+    .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10,10,11,0.9); z-index: 999; flex-direction: column; align-items: center; justify-content: center; display: none; }
+    .loader { width: 60px; height: 60px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    .site-footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: auto; }
+
+    /* Toast Notification */
+    #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; display: flex; flex-direction: column; gap: 1rem; pointer-events: none; }
+    .toast { background: var(--surface-elevated); border: 1px solid var(--border); color: #fff; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 1rem; animation: slideIn 0.3s cubic-bezier(0.4,0,0.2,1); transform-origin: bottom right; pointer-events: auto; }
+    .toast.hide { animation: fadeOut 0.3s forwards; }
+    .toast-icon { font-size: 1.25rem; }
+    .toast-message { font-size: 0.95rem; font-weight: 500; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(10px) scale(0.95); } }
+
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- LOGIN ROUTE -->
+  <div id="view-login" class="view auth-layout">
+    <div class="auth-card">
+      <h1 class="auth-logo">Moodify</h1>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="setAuthTab('login')">Giriş Yap</button>
+        <button class="auth-tab" onclick="setAuthTab('register')">Kayıt Ol</button>
+      </div>
+
+      <div id="form-login">
+        <div class="form-group"><label>E-posta</label><input type="email" id="l-email" class="form-input" placeholder="mail@ornek.com"></div>
+        <div class="form-group"><label>Şifre</label><input type="password" id="l-pass" class="form-input" placeholder="••••••••"></div>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="doLogin()">Giriş Yap</button>
+        <button class="btn btn-outline" style="width: 100%;" onclick="doGoogle()">Google ile Giriş</button>
+      </div>
+
+      <div id="form-register" style="display:none;">
+        <div class="form-group"><label>Ad Soyad</label><input type="text" id="r-name" class="form-input" placeholder="İsim Soyisim"></div>
+        <div class="form-group"><label>E-posta</label><input type="email" id="r-email" class="form-input" placeholder="mail@ornek.com"></div>
+        <div class="form-group"><label>Şifre</label><input type="password" id="r-pass" class="form-input" placeholder="Min 6 karakter"></div>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="doRegister()">Hesap Oluştur</button>
+        <button class="btn btn-outline" style="width: 100%;" onclick="doGoogle()">Google ile Devam Et</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATED APP -->
+  <div id="app-wrapper" style="display: none; flex-direction: column; min-height: 100vh;">
+    <header class="header">
+      <div class="logo-container">
+        <a href="#/dashboard" class="logo-brand" style="display:flex; align-items:center; gap:10px;">
+          <img src="logo.png" style="height: 36px; width: 36px; object-fit: contain; border-radius: 50%;">
+          Moodify
+        </a>
+        <nav class="nav-links">
+          <a href="#/dashboard" class="nav-link" id="nav-dashboard">Ana Sayfa</a>
+          <a href="#/analyze" class="nav-link" id="nav-analyze">Analiz</a>
+          <a href="#/history" class="nav-link" id="nav-history">Geçmiş</a>
+        </nav>
+      </div>
+      <div class="user-menu" onclick="toggleDropdown(event)">
+        <button class="avatar-btn"><img id="h-avatar" src=""></button>
+        <div id="user-dropdown" class="dropdown">
+          <a href="#/profile" class="dropdown-item">Profilim</a>
+          <a href="#/history" class="dropdown-item">Oturum Geçmişi</a>
+          <button class="dropdown-item" style="color: #ef4444; border:none; width:100%; cursor:pointer;" onclick="cikisYap()">Çıkış Yap</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD ROUTE -->
+    <main id="view-dashboard" class="view container">
+      <div class="hero-section">
+        <div class="hero-text">
+          <h1 id="d-isim">Merhaba!</h1>
+          <p>Yapay zeka destekli yüz ve duygu analiz sistemine hoş geldin. Hemen bir analiz başlatarak ruh haline en uygun müzikleri keşfet.</p>
+          <a href="#/analyze" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">Yeni Analiz Başlat</a>
+        </div>
+        <img id="d-avatar" src="" style="width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover;">
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val mono" id="st-total">0</div>
+          <div class="stat-label">Toplam Analiz</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="st-mood">-</div>
+          <div class="stat-label">En Sık Hissedilen Duygu</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="text-transform: capitalize;" id="st-genre">-</div>
+          <div class="stat-label">Favori Müzik Türü</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 300px; background: var(--surface); padding: 2rem; border-radius: 24px; border: 1px solid var(--border);">
+          <h2 class="section-title">Duygu Spektrumu</h2>
+          <div id="dashboard-chart">
+             <p style="color: var(--text-muted)">Henüz yeterli veri yok.</p>
+          </div>
+        </div>
+        <div style="flex: 1.2; min-width: 300px; background: var(--surface); padding: 2rem; border-radius: 24px; border: 1px solid var(--border);">
+          <h2 class="section-title">Müzikal Karakterin</h2>
+          <h3 id="p-muzik-ruhu" style="color: var(--accent); margin-bottom: 1rem;">Analiz Bekleniyor</h3>
+          <p id="p-muzik-detay" style="color: var(--text-muted); line-height: 1.6;">Daha fazla analiz yaparak yapay zekanın senin müzikal profilini çıkarmasına yardımcı ol.</p>
+          <h4 style="margin-top: 2rem; margin-bottom: 1rem; font-family: 'Inter';">Geçmiş Favorilerin</h4>
+          <div id="p-sarki-listesi" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: none;"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ANALYZE ROUTE -->
+    <main id="view-analyze" class="view container">
+      <div class="analyze-layout">
+        <div class="analyze-left">
+          <div>
+            <h2 style="margin-bottom: 0.5rem;">Yüzünü Tarat</h2>
+            <p style="color: var(--text-muted)">Kameraya bak ve analiz butonuna tıkla.</p>
+          </div>
+          <div class="video-wrapper">
+            <video id="kamera-feed" autoplay playsinline></video>
+          </div>
+          <div style="background: var(--surface); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border);">
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem;">Dinlemek İstediğin Tür</p>
+            <div class="genre-selector" id="genre-container"></div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; font-size: 1.1rem; padding: 1rem;" onclick="runAnalysis()">✨ Ruh Halimi Analiz Et</button>
+          </div>
+        </div>
+        
+        <div class="analyze-right" id="result-box">
+           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: 1rem;"><path d="M12 2v20M17 5v14M7 5v14M22 10v4M2 10v4"/></svg>
+           <p style="color: var(--text-muted)">Analiz sonucu burada belirecek.</p>
+        </div>
+      </div>
+      
+      <div id="songs-container" style="display: none; margin-top: 4rem;">
+        <h2 class="section-title">Senin İçin Seçilenler</h2>
+        <div class="songs-grid" id="a-sarki-listesi"></div>
+      </div>
+    </main>
+
+    <!-- HISTORY ROUTE -->
+    <main id="view-history" class="view container">
+      <h2 class="section-title" style="margin-bottom: 2rem;">Geçmiş Oturumların</h2>
+      <div id="h-listesi">
+        <p style="color: var(--text-muted)">Henüz geçmiş analiziniz bulunmuyor.</p>
+      </div>
+    </main>
+
+    <!-- PROFILE ROUTE -->
+    <main id="view-profile" class="view container">
+      <h2 class="section-title" style="margin-bottom: 2rem;">Profil ve Ayarlar</h2>
+      
+      <div style="background: var(--surface); border: 1px solid var(--border); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;">Kullanıcı Bilgileri</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">(Google ile giriş yaptıysanız şifre kısmını boş bırakabilirsiniz. Tıklayınca Google doğrulama penceresi açılacaktır.)</p>
+        <div class="form-group"><label>Mevcut Şifreniz (Güvenlik Doğrulaması)</label><input type="password" id="p-current-pass" class="form-input" placeholder="Mevcut Şifreniz"></div>
+        
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 250px;">
+            <div class="form-group"><label>Yeni E-posta</label><input type="email" id="p-email" class="form-input" placeholder="Yeni e-posta adresi"></div>
+            <button class="btn btn-outline" style="width: 100%;" onclick="guncelleEmail()">E-posta Güncelle</button>
+          </div>
+          <div style="flex: 1; min-width: 250px;">
+            <div class="form-group"><label>Yeni Şifre</label><input type="password" id="p-new-pass" class="form-input" placeholder="Yeni şifre (Min 6 karakter)"></div>
+            <button class="btn btn-outline" style="width: 100%;" onclick="guncelleSifre()">Şifre Güncelle</button>
+          </div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 2rem;">
+         <button class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="cikisYap()">Sistemden Çıkış Yap</button>
+      </div>
+    </main>
+    
+    <footer class="site-footer">
+      &copy; 2024 Moodify. Tüm hakları saklıdır.<br>
+      <span style="opacity:0.6">Yapay zeka destekli müzik analitiği platformu.</span>
+    </footer>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="overlay">
+    <div class="loader"></div>
+    <h2 style="color: #fff; margin-bottom: 0.5rem;">Analiz Ediliyor...</h2>
+    <p style="color: var(--text-muted);">Yapay zeka yüz ifadelerini inceliyor</p>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script>
+    // --------------------------------------------------------
+    // FIREBASE YAPILANDIRMASI
+    // --------------------------------------------------------
+    const firebaseConfig = {
+      apiKey           : "AIzaSyBcI4g0zpCvbfzYRY3hjbMim0IvkuCao-U",
+      authDomain       : "moodify-f625c.firebaseapp.com",
+      projectId        : "moodify-f625c",
+      storageBucket    : "moodify-f625c.firebasestorage.app",
+      messagingSenderId: "52157707332",
+      appId            : "1:52157707332:web:f42d707e68af049524f811"
+    };
+
+    let auth = null; let db = null; let aktifKullanici = null;
+    let stream = null; let gecmisOturumlar = []; let aktifAudio = null;
+    
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+
+    // --------------------------------------------------------
+    // BİLDİRİM (TOAST) SİSTEMİ
+    // --------------------------------------------------------
+    function showToast(message, type="info") {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      const icon = type==='error'?'❌':type==='success'?'✅':'ℹ️';
+      toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-message">${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('hide');
+        toast.addEventListener('animationend', () => toast.remove());
+      }, 3500);
+    }
+
+    // --------------------------------------------------------
+    // ROUTER (Hash Yönlendirme)
+    // --------------------------------------------------------
+    function handleRoute() {
+      const hash = window.location.hash || '#/dashboard';
+      
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      
+      if (!aktifKullanici) {
+        document.getElementById('app-wrapper').style.display = 'none';
+        document.getElementById('view-login').classList.add('active');
+        if(window.location.hash !== '#/login') window.location.hash = '#/login';
+        stopCamera();
+        return;
+      }
+      
+      if (hash === '#/login' || hash === '') {
+        window.location.hash = '#/dashboard';
+        return;
+      }
+
+      document.getElementById('app-wrapper').style.display = 'flex';
+      
+      const viewId = hash.replace('#/', 'view-');
+      const viewEl = document.getElementById(viewId);
+      if(viewEl) viewEl.classList.add('active');
+      
+      const navEl = document.getElementById(hash.replace('#/', 'nav-'));
+      if(navEl) navEl.classList.add('active');
+      
+      if (hash === '#/analyze') {
+        startCamera();
+        document.getElementById('songs-container').style.display = 'none';
+        document.getElementById('result-box').innerHTML = `
+           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: 1rem;"><path d="M12 2v20M17 5v14M7 5v14M22 10v4M2 10v4"/></svg>
+           <p style="color: var(--text-muted)">Analiz sonucu burada belirecek.</p>`;
+      } else {
+        stopCamera();
+      }
+      
+      if (hash === '#/dashboard') updateDashboard();
+      
+      window.scrollTo(0,0);
+    }
+
+    handleRoute();
+    window.addEventListener('hashchange', handleRoute);
+
+    auth.onAuthStateChanged(user => {
+      aktifKullanici = user;
+      if (user) {
+        const ad = user.displayName || user.email.split('@')[0];
+        const pp = user.photoURL || `https://ui-avatars.com/api/?name=${ad}&background=6366f1&color=fff`;
+        document.getElementById('h-avatar').src = pp;
+        document.getElementById('d-avatar').src = pp;
+        document.getElementById('d-isim').innerText = `Merhaba, ${ad.split(' ')[0]}!`;
+        fetchHistory().then(() => handleRoute()).catch(() => handleRoute());
+      } else {
+        handleRoute();
+      }
+    });
+
+    // --------------------------------------------------------
+    // AUTH FONKSİYONLARI
+    // --------------------------------------------------------
+    function setAuthTab(tab) {
+      document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+      document.getElementById('form-register').style.display = tab==='register'?'block':'none';
+      document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+    async function doGoogle() {
+      try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); } 
+      catch (e) { showToast("Google girişi başarısız.", "error"); }
+    }
+    async function doLogin() {
+      const e = document.getElementById('l-email').value, p = document.getElementById('l-pass').value;
+      if(!e||!p) return showToast("E-posta ve şifre girmelisiniz.", "error");
+      try { await auth.signInWithEmailAndPassword(e, p); } catch(err) { showToast("Hatalı giriş, e-posta veya şifre yanlış.", "error"); }
+    }
+    async function doRegister() {
+      const n = document.getElementById('r-name').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
+      if(!n||!e||p.length<6) return showToast("Lütfen alanları eksiksiz doldurun (Şifre min. 6 karakter).", "error");
+      try { 
+        const c = await auth.createUserWithEmailAndPassword(e, p);
+        await c.user.updateProfile({displayName: n});
+        window.location.reload();
+      } catch(err) { showToast("Kayıt başarısız: " + err.message, "error"); }
+    }
+    async function cikisYap() { await auth.signOut(); }
+
+    async function reauth(pass) {
+      if(!aktifKullanici) throw new Error("Oturum yok.");
+      if (aktifKullanici.providerData.some(p => p.providerId === 'google.com')) {
+         const pvd = new firebase.auth.GoogleAuthProvider();
+         await aktifKullanici.reauthenticateWithPopup(pvd);
+      } else {
+         if(!pass) throw new Error("İşlem için mevcut şifrenizi girmelisiniz.");
+         const cred = firebase.auth.EmailAuthProvider.credential(aktifKullanici.email, pass);
+         await aktifKullanici.reauthenticateWithCredential(cred);
+      }
+    }
+    
+    async function guncelleEmail() {
+      const e = document.getElementById('p-email').value, p = document.getElementById('p-current-pass').value;
+      if(!e) return showToast("Yeni e-posta girmelisiniz.", "error");
+      try {
+        await reauth(p);
+        await aktifKullanici.updateEmail(e);
+        showToast("E-posta başarıyla güncellendi!", "success");
+        document.getElementById('p-email').value = '';
+        document.getElementById('p-current-pass').value = '';
+      } catch(err) { showToast("Hata: " + err.message, "error"); }
+    }
+    
+    async function guncelleSifre() {
+      const n = document.getElementById('p-new-pass').value, p = document.getElementById('p-current-pass').value;
+      if(!n) return showToast("Yeni şifreyi girmelisiniz.", "error");
+      try {
+        await reauth(p);
+        await aktifKullanici.updatePassword(n);
+        showToast("Şifre başarıyla güncellendi!", "success");
+        document.getElementById('p-new-pass').value = '';
+        document.getElementById('p-current-pass').value = '';
+      } catch(err) { showToast("Hata: " + err.message, "error"); }
+    }
+
+    function toggleDropdown(e) {
+      e.stopPropagation();
+      document.getElementById('user-dropdown').classList.toggle('show');
+    }
+    window.addEventListener('click', () => {
+      const dd = document.getElementById('user-dropdown');
+      if(dd) dd.classList.remove('show');
+    });
+
+    // --------------------------------------------------------
+    // CAMERA & ANALYSIS
+    // --------------------------------------------------------
+    const GENRES = ["türkçe pop", "pop", "rock", "caz", "klasik", "elektronik", "hip-hop", "r&b", "indie", "metal", "blues"];
+    let selectedGenre = "türkçe pop";
+
+    function renderGenres() {
+      const c = document.getElementById('genre-container'); c.innerHTML = '';
+      GENRES.forEach(g => {
+        const btn = document.createElement('button');
+        btn.className = `genre-pill ${g===selectedGenre?'active':''}`;
+        btn.innerText = g.toUpperCase();
+        btn.onclick = () => { selectedGenre = g; renderGenres(); };
+        c.appendChild(btn);
+      });
+    }
+    renderGenres();
+
+    async function startCamera() {
+      if(stream) return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+        document.getElementById('kamera-feed').srcObject = stream;
+      } catch(e) { console.error(e); }
+    }
+    function stopCamera() {
+      if(stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    }
+
+    const MOOD_COLORS = { "happy":"var(--mood-happy)", "sad":"var(--mood-sad)", "angry":"var(--mood-angry)", "surprised":"var(--mood-surprised)", "fearful":"var(--mood-fearful)", "disgusted":"var(--mood-disgusted)", "neutral":"var(--mood-neutral)", "calm":"var(--mood-calm)" };
+    const EMOJIS = { "happy":"😄", "sad":"😢", "angry":"😠", "surprised":"😲", "fearful":"😨", "disgusted":"😒", "neutral":"😐", "calm":"😌" };
+
+    async function runAnalysis() {
+      if(!stream) return showToast("Kamera açılamadı! İzin verdiğinizden emin olun.", "error");
+      const v = document.getElementById('kamera-feed');
+      const canvas = document.createElement('canvas'); canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+      canvas.getContext('2d').drawImage(v,0,0);
+      const b64 = canvas.toDataURL('image/jpeg', 0.8);
+
+      document.getElementById('loading-overlay').style.display = 'flex';
+      
+      try {
+        const res = await fetch("https://api-xcz2jfjija-uc.a.run.app/analyze", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({image:b64, tur:selectedGenre})
+        });
+        const data = await res.json();
+        document.getElementById('loading-overlay').style.display = 'none';
+        
+        if(!data.basari) return showToast("Analiz başarısız: " + data.hata, "error");
+        
+        const dKey = data.duygu.ana_duygu;
+        const color = MOOD_COLORS[dKey] || MOOD_COLORS['neutral'];
+        
+        document.getElementById('result-box').innerHTML = `
+          <div class="emotion-emoji">${EMOJIS[dKey]||'🤖'}</div>
+          <h2 class="emotion-title" style="color:${color}">${data.duygu.etiket}</h2>
+          <p class="emotion-desc">${data.duygu.aciklama}</p>
+          <div style="margin-top:1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center;">
+             ${Object.entries(data.duygu.tum_duygular).filter(x=>x[0]!==dKey && x[1]>0.05).map(x=>`<span class="badge">${x[0]}: %${Math.round(x[1]*100)}</span>`).join('')}
+          </div>
+        `;
+        
+        const sContainer = document.getElementById('songs-container');
+        const sList = document.getElementById('a-sarki-listesi');
+        sList.innerHTML = '';
+        data.parcalar.forEach(p => {
+          sList.innerHTML += `
+            <div class="song-card">
+               <img src="${p.kapak_url}" class="song-cover">
+               <div class="song-info">
+                 <div class="song-title">${p.isim}</div>
+                 <div class="song-artist">${p.sanatci}</div>
+               </div>
+               ${p.onizleme_url ? `<button class="btn btn-primary" style="padding: 0.5rem; background:${color}" onclick="playAudio(this, '${p.onizleme_url}')">▶</button>` : ''}
+               <a href="${p.spotify_url}" target="_blank" class="btn btn-outline" style="padding: 0.5rem">Spotify</a>
+            </div>
+          `;
+        });
+        sContainer.style.display = 'block';
+        sContainer.scrollIntoView({behavior:'smooth'});
+        
+        await db.collection('oturumlar').add({
+          kullaniciId: aktifKullanici.uid, zaman: firebase.firestore.FieldValue.serverTimestamp(),
+          duygu: dKey, etiket: data.duygu.etiket, tur: selectedGenre, parcalar: data.parcalar.slice(0,3)
+        });
+        fetchHistory();
+
+      } catch(e) {
+        document.getElementById('loading-overlay').style.display = 'none';
+        showToast("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.", "error");
+      }
+    }
+
+    function playAudio(btn, url) {
+      if(aktifAudio) {
+         aktifAudio.pause(); 
+         document.querySelectorAll('#a-sarki-listesi .btn-primary').forEach(b=>b.innerText='▶');
+         if(aktifAudio.src===url) { aktifAudio=null; return; }
+      }
+      aktifAudio = new Audio(url); aktifAudio.play();
+      btn.innerText = '⏸';
+      aktifAudio.onended = () => { btn.innerText='▶'; aktifAudio=null; };
+    }
+
+    // --------------------------------------------------------
+    // HISTORY & DASHBOARD
+    // --------------------------------------------------------
+    async function fetchHistory() {
+      if(!db || !aktifKullanici) return;
+      try {
+        const snap = await db.collection('oturumlar').where('kullaniciId','==',aktifKullanici.uid).orderBy('zaman','desc').get();
+        gecmisOturumlar = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      } catch (e) {
+        console.error("Geçmiş veri çekilemedi:", e);
+        gecmisOturumlar = [];
+      }
+      renderHistory();
+      if(window.location.hash === '#/dashboard') updateDashboard();
+    }
+
+    function renderHistory() {
+      const hList = document.getElementById('h-listesi'); hList.innerHTML = '';
+      if(gecmisOturumlar.length === 0) {
+         hList.innerHTML = '<p style="color:var(--text-muted)">Henüz geçmiş analiziniz bulunmuyor.</p>'; return;
+      }
+      gecmisOturumlar.forEach(o => {
+         const date = o.zaman ? o.zaman.toDate().toLocaleDateString('tr-TR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Şimdi';
+         hList.innerHTML += `
+           <div class="history-card">
+             <div>
+               <div class="history-date">${date}</div>
+               <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <span class="badge" style="color:${MOOD_COLORS[o.duygu]}">${EMOJIS[o.duygu]} ${o.etiket}</span>
+                  <span class="badge">${o.tur.toUpperCase()}</span>
+               </div>
+             </div>
+             <div style="display:flex;">
+               ${(o.parcalar||[]).map(p=>`<img src="${p.kapak_url}" style="width:40px; height:40px; border-radius:50%; margin-left:-10px; border:2px solid var(--surface)">`).join('')}
+             </div>
+           </div>
+         `;
+      });
+    }
+
+    function updateDashboard() {
+      if(gecmisOturumlar.length === 0) return;
+      document.getElementById('st-total').innerText = gecmisOturumlar.length;
+      
+      const dSay = {}; const tSay = {};
+      gecmisOturumlar.forEach(o => { dSay[o.etiket] = (dSay[o.etiket]||0)+1; tSay[o.tur] = (tSay[o.tur]||0)+1; });
+      const enSikDuygu = Object.keys(dSay).reduce((a,b)=>dSay[a]>dSay[b]?a:b);
+      const enSikTur = Object.keys(tSay).reduce((a,b)=>tSay[a]>tSay[b]?a:b);
+      
+      document.getElementById('st-mood').innerText = enSikDuygu;
+      document.getElementById('st-genre').innerText = enSikTur;
+
+      const cBox = document.getElementById('dashboard-chart'); cBox.innerHTML = '';
+      Object.entries(dSay).sort((a,b)=>b[1]-a[1]).forEach(([lbl, val]) => {
+         const pct = Math.round((val/gecmisOturumlar.length)*100);
+         const orj = gecmisOturumlar.find(o=>o.etiket===lbl)?.duygu || 'neutral';
+         cBox.innerHTML += `
+           <div class="chart-row">
+             <div class="chart-label">${lbl}</div>
+             <div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${pct}%; background:${MOOD_COLORS[orj]}"></div></div>
+             <div class="chart-pct">%${pct}</div>
+           </div>`;
+      });
+
+      const pRuhu = document.getElementById('p-muzik-ruhu');
+      const pDetay = document.getElementById('p-muzik-detay');
+      if(enSikDuygu.includes('Mutlu') || enSikTur.includes('pop')) {
+         pRuhu.innerText = "Enerjik ve Pozitif Dinleyici";
+         pDetay.innerText = `Müzik zevkine göre pozitif enerjili şarkılar favorin. Daha çok ${enSikTur} dinleyerek içindeki neşeyi yansıtıyorsun.`;
+      } else if (enSikDuygu.includes('Hüzünlü') || enSikDuygu.includes('Kork')) {
+         pRuhu.innerText = "Derin ve Duygusal Bir Ruh";
+         pDetay.innerText = `Melodilerin derinliğine odaklanıyorsun. Duygusal anlarında ${enSikTur} türü sana yoldaşlık ediyor.`;
+      } else {
+         pRuhu.innerText = "Dengeli ve Keşifçi";
+         pDetay.innerText = `Farklı ruh hallerine uyum sağlamayı seviyorsun. ${enSikTur} ağırlıklı dinlesen de yeniliklere açıksın.`;
+      }
+
+      const sBox = document.getElementById('p-sarki-listesi'); sBox.innerHTML = '';
+      const unique = []; const uIds = new Set();
+      gecmisOturumlar.forEach(o => {
+         (o.parcalar||[]).forEach(p => { if(!uIds.has(p.isim)){ uIds.add(p.isim); unique.push(p); }});
+      });
+      unique.slice(0,10).forEach(p => {
+         sBox.innerHTML += `
+           <div style="min-width: 100px; text-align: center;">
+             <a href="${p.spotify_url}" target="_blank" style="text-decoration:none;">
+               <img src="${p.kapak_url}" style="width:100px; height:100px; border-radius:12px; object-fit:cover; margin-bottom:0.5rem;">
+               <div style="font-size:0.8rem; font-weight:500; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.isim}</div>
+               <div style="font-size:0.7rem; color:var(--text-muted);">${p.sanatci}</div>
+             </a>
+           </div>`;
+      });
+    }
+
+  </script>
+</body>
+</html>

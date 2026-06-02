@@ -1,0 +1,10 @@
+flask
+flask-cors
+deepface
+opencv-python
+spotipy
+python-dotenv
+numpy<2
+tf-keras
+firebase-functions>=0.1.0
+firebase-admin>=6.2.0

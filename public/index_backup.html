@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moodify - Yüzün Müziğini Seçsin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS Değişkenleri */
+    :root {
+      --arka-plan-ana: #07090F;
+      --arka-plan-yuzey: #0F1119;
+      --arka-plan-yuksel: #171B27;
+      --cam-arka-plan: rgba(255, 255, 255, 0.04);
+      --sinir: #1F2435;
+      --cam-sinir: rgba(255, 255, 255, 0.08);
+      --vurgu-mor: #7B6EF6;
+      --vurgu-yesil: #1DB954;
+      --metin-ana: #E8EAF2;
+      --metin-soluk: #6B7280;
+      
+      --duygu-mutlu: #F59E0B;
+      --duygu-huzunlu: #60A5FA;
+      --duygu-sinirli: #F87171;
+      --duygu-saskin: #FB923C;
+      --duygu-endiseli: #C084FC;
+      --duygu-rahatsiz: #4ADE80;
+      --duygu-notr: #94A3B8;
+      --duygu-sakin: #67E8F9;
+
+      --glow-renk: rgba(123, 110, 246, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--arka-plan-ana);
+      color: var(--metin-ana);
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+    }
+
+    .sayilar {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Durum Yönetimi */
+    .state {
+      display: none;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    .state.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Butonlar */
+    button {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-mor {
+      background: var(--vurgu-mor);
+      color: #FFF;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      width: 100%;
+    }
+    .btn-mor:hover {
+      background: #685BE0;
+      transform: translateY(-2px);
+    }
+
+    .btn-beyaz {
+      background: #FFF;
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      width: 100%;
+    }
+    .btn-beyaz:hover {
+      background: #F3F4F6;
+      transform: translateY(-2px);
+    }
+
+    .btn-yesil-pill {
+      background: var(--vurgu-yesil);
+      color: #FFF;
+      padding: 0.75rem 2rem;
+      border-radius: 9999px;
+      font-size: 1rem;
+      box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+    }
+    .btn-yesil-pill:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(29, 185, 84, 0.4);
+    }
+
+    .btn-metin {
+      background: transparent;
+      color: var(--metin-soluk);
+      font-size: 0.875rem;
+    }
+    .btn-metin:hover {
+      color: var(--metin-ana);
+    }
+
+    /* Giriş Ekranı Düzeni */
+    .auth-layout {
+      width: 100vw;
+    }
+    @media(min-width: 768px) {
+      .state.active.auth-layout { flex-direction: row; }
+    }
+
+    .auth-left {
+      flex: 1;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .auth-bg-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--vurgu-mor) 0%, transparent 70%);
+      opacity: 0.15;
+      top: -100px;
+      left: -100px;
+      animation: yavasNefes 8s infinite alternate;
+    }
+
+    @keyframes yavasNefes {
+      0% { transform: scale(1); opacity: 0.15; }
+      100% { transform: scale(1.2); opacity: 0.25; }
+    }
+
+    .auth-logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 4rem;
+      margin-bottom: 0.5rem;
+      z-index: 1;
+    }
+    
+    .auth-sub {
+      font-size: 1.25rem;
+      color: var(--metin-soluk);
+      margin-bottom: 3rem;
+      z-index: 1;
+    }
+
+    .auth-features {
+      list-style: none;
+      z-index: 1;
+    }
+    .auth-features li {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .auth-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: var(--arka-plan-yuzey);
+    }
+
+    .auth-card {
+      background: var(--cam-arka-plan);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--cam-sinir);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--sinir);
+      padding-bottom: 1rem;
+    }
+    
+    .auth-tab {
+      background: transparent;
+      color: var(--metin-soluk);
+      font-size: 1.1rem;
+      padding: 0.5rem;
+    }
+    .auth-tab.active {
+      color: var(--metin-ana);
+      border-bottom: 2px solid var(--vurgu-mor);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--metin-soluk);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--sinir);
+      color: var(--metin-ana);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--vurgu-mor);
+    }
+
+    .sifre-goster {
+      position: absolute;
+      right: 1rem;
+      top: 2.2rem;
+      background: transparent;
+      color: var(--metin-soluk);
+      border: none;
+    }
+
+    .ayirici {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--metin-soluk);
+      margin: 1.5rem 0;
+    }
+    .ayirici::before, .ayirici::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--sinir);
+    }
+    .ayirici::before { margin-right: 1em; }
+    .ayirici::after { margin-left: 1em; }
+
+    .hata-mesaji {
+      color: var(--duygu-sinirli);
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    /* Genel Layout (Giriş Sonrası) */
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+    }
+    
+    .header {
+      height: 80px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2rem;
+      border-bottom: 1px solid var(--sinir);
+      background: var(--arka-plan-ana);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+
+    .user-menu {
+      position: relative;
+    }
+    
+    .avatar-btn {
+      background: transparent;
+      padding: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--sinir);
+    }
+    .avatar-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 120%;
+      right: 0;
+      background: var(--arka-plan-yuksel);
+      border: 1px solid var(--cam-sinir);
+      border-radius: 8px;
+      width: 160px;
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+      overflow: hidden;
+    }
+    .dropdown.show { display: flex; }
+    
+    .dropdown-item {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      background: transparent;
+      color: var(--metin-ana);
+      justify-content: flex-start;
+      border-radius: 0;
+    }
+    .dropdown-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Karşılama Ekranı (State 1) */
+    .karsilama-icerik {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .karsilama-baslik {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .karsilama-alt {
+      font-size: 1.25rem;
+      color: var(--metin-soluk);
+      margin-bottom: 3rem;
+    }
+
+    /* Kamera Ekranı (State 2) */
+    .kamera-layout {
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      gap: 2rem;
+    }
+    @media(min-width: 768px) {
+      .kamera-layout { flex-direction: row; }
+    }
+
+    .kamera-sol {
+      flex: 58%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+    }
+
+    .video-container {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--sinir);
+      transition: border-color 0.9s ease;
+    }
+    .video-container.glow {
+      border-color: var(--glow-renk);
+      box-shadow: 0 0 40px var(--glow-renk);
+    }
+    
+    #kamera-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    /* L şeklindeki dekorasyonlar */
+    .kose-dekor {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: rgba(255,255,255,0.5);
+      border-style: solid;
+      transition: border-color 0.9s;
+    }
+    .kose-dekor.glow { border-color: var(--glow-renk); }
+    .tl { top: 1rem; left: 1rem; border-width: 2px 0 0 2px; }
+    .tr { top: 1rem; right: 1rem; border-width: 2px 2px 0 0; }
+    .bl { bottom: 1rem; left: 1rem; border-width: 0 0 2px 2px; }
+    .br { bottom: 1rem; right: 1rem; border-width: 0 2px 2px 0; }
+
+    .kamera-kontroller {
+      background: var(--cam-arka-plan);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--cam-sinir);
+      border-radius: 16px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .tur-secici {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      scrollbar-width: none;
+    }
+    .tur-secici::-webkit-scrollbar { display: none; }
+    
+    .tur-pill {
+      background: rgba(255,255,255,0.05);
+      color: var(--metin-soluk);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+    .tur-pill:hover { color: var(--metin-ana); }
+    .tur-pill.secili {
+      background: var(--metin-ana);
+      color: var(--arka-plan-ana);
+    }
+
+    .kamera-sag {
+      flex: 42%;
+      background: var(--arka-plan-yuzey);
+      border-radius: 16px;
+      border: 1px solid var(--sinir);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .radial-bg {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      background: radial-gradient(circle, var(--glow-renk) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.9s;
+      z-index: 0;
+    }
+    .radial-bg.show { opacity: 0.3; }
+
+    .duygu-icerik {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .duygu-emoji {
+      font-size: 72px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .duygu-emoji.goster {
+      display: block;
+      animation: bounceIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .duygu-baslik {
+      font-size: 52px;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--glow-renk);
+      transition: color 0.9s;
+    }
+
+    .guven-konteyner {
+      width: 100%;
+      max-width: 200px;
+      margin: 1.5rem 0;
+      display: none;
+    }
+    .guven-text {
+      font-size: 0.875rem;
+      color: var(--metin-soluk);
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .guven-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .guven-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--glow-renk);
+      transition: width 0.7s ease-out, background-color 0.9s;
+    }
+
+    .alt-duygular {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    .alt-duygu-pill {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--cam-sinir);
+      background: rgba(0,0,0,0.3);
+    }
+
+    /* Analiz Overlay (State 3) */
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(7, 9, 15, 0.85);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .tarayici {
+      width: 100px;
+      height: 100px;
+      border: 4px solid var(--cam-sinir);
+      border-top-color: var(--vurgu-mor);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 2rem;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Sonuçlar (State 4) */
+    .sonuclar-layout {
+      flex: 1;
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+    }
+    .sarki-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 2rem;
+    }
+    @media(min-width: 768px) {
+      .sarki-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .sarki-kart {
+      background: var(--cam-arka-plan);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--cam-sinir);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .sarki-kart:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-4px) !important;
+      border-color: var(--glow-renk);
+    }
+    .kart-goster {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sarki-kapak {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .sarki-bilgi { flex: 1; overflow: hidden; }
+    .sarki-isim {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
+    }
+    .sarki-sanatci {
+      font-size: 0.875rem;
+      color: var(--metin-soluk);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .play-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--vurgu-yesil);
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-left: 3px;
+    }
+    
+    /* Profil (State 5) */
+    .profil-layout {
+      flex: 1;
+      padding: 3rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .profil-ust {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .profil-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+    }
+    .istatistik-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: 100%;
+      margin-top: 2rem;
+    }
+    .istatistik-kart {
+      background: var(--arka-plan-yuzey);
+      border: 1px solid var(--sinir);
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .ist-deger {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--vurgu-mor);
+    }
+    .ist-etiket { font-size: 0.875rem; color: var(--metin-soluk); }
+
+    /* CSS Bar Chart */
+    .chart-container {
+      background: var(--arka-plan-yuzey);
+      border: 1px solid var(--sinir);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+    .chart-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .chart-label { width: 80px; font-size: 0.875rem; color: var(--metin-soluk); }
+    .chart-bar-bg {
+      flex: 1;
+      height: 24px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      margin: 0 1rem;
+      overflow: hidden;
+    }
+    .chart-bar-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 1s ease-out;
+    }
+    .chart-pct { width: 50px; text-align: right; font-size: 0.875rem; font-family: 'JetBrains Mono'; }
+
+    /* Geçmiş (State 6) */
+    .gecmis-kart {
+      background: var(--arka-plan-yuzey);
+      border: 1px solid var(--sinir);
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gecmis-tarih { font-family: 'JetBrains Mono'; font-size: 0.875rem; color: var(--metin-soluk); margin-bottom: 0.5rem;}
+    .gecmis-rozet {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.1);
+    }
+
+  </style>
+
+  <!-- Firebase Compat V10 -->
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- STATE 0: AUTH (GİRİŞ EKRANI) -->
+  <div id="state-0" class="state auth-layout">
+    <div class="auth-left">
+      <div class="auth-bg-glow"></div>
+      <h1 class="auth-logo">moodify</h1>
+      <p class="auth-sub">Yüzün müziğini seçsin.</p>
+      <ul class="auth-features">
+        <li>🎵 Ruh haline özel müzik önerileri</li>
+        <li>😊 Anlık derin duygu analizi</li>
+        <li>📱 Geçmiş oturumları kaydetme</li>
+      </ul>
+    </div>
+    <div class="auth-right">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="tabDegistir('giris', this)">Giriş Yap</button>
+          <button class="auth-tab" onclick="tabDegistir('kayit', this)">Kayıt Ol</button>
+        </div>
+
+        <!-- Giriş Formu -->
+        <div id="form-giris" style="display: block;">
+          <button class="btn-beyaz" onclick="googleIleGiris()">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="margin-right:8px"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+            Google ile Giriş Yap
+          </button>
+          
+          <div class="ayirici">veya</div>
+          
+          <div class="form-group">
+            <label>E-posta</label>
+            <input type="email" id="giris-email" class="form-input" placeholder="mail@ornek.com">
+          </div>
+          <div class="form-group">
+            <label>Şifre</label>
+            <input type="password" id="giris-sifre" class="form-input" placeholder="••••••••">
+            <button class="sifre-goster" onclick="sifreGoster('giris-sifre')">👁</button>
+          </div>
+          <div id="giris-hata" class="hata-mesaji"></div>
+          
+          <button class="btn-mor" style="margin-top: 1rem;" onclick="epostaGirisTetikle()">Giriş Yap</button>
+          
+        </div>
+
+        <!-- Kayıt Formu -->
+        <div id="form-kayit" style="display: none;">
+          <button class="btn-beyaz" onclick="googleIleGiris()">
+             <svg width="24" height="24" viewBox="0 0 24 24" style="margin-right:8px"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+            Google ile Devam Et
+          </button>
+          
+          <div class="ayirici">veya</div>
+
+          <div class="form-group">
+            <label>Ad Soyad</label>
+            <input type="text" id="kayit-ad" class="form-input" placeholder="İsim Soyisim">
+          </div>
+          <div class="form-group">
+            <label>E-posta</label>
+            <input type="email" id="kayit-email" class="form-input" placeholder="mail@ornek.com">
+          </div>
+          <div class="form-group">
+            <label>Şifre</label>
+            <input type="password" id="kayit-sifre" class="form-input" placeholder="En az 6 karakter">
+          </div>
+          <div id="kayit-hata" class="hata-mesaji"></div>
+
+          <button class="btn-mor" style="margin-top: 1rem;" onclick="epostaKayitTetikle()">Hesap Oluştur</button>
+          
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- UYGULAMA İÇİ (Header Ortak) -->
+  <div id="app-wrapper" class="app-layout" style="display: flex;">
+    <header class="header">
+      <div class="header-logo" onclick="durumGoster(1)">moodify</div>
+      <div class="user-menu">
+        <button class="avatar-btn" onclick="toggleDropdown()">
+          <img id="header-avatar" src="" alt="Avatar">
+        </button>
+        <div id="user-dropdown" class="dropdown">
+          <!-- JS ile doldurulacak -->
+        </div>
+      </div>
+    </header>
+
+    <!-- STATE 1: KARŞILAMA -->
+    <div id="state-1" class="state active karsilama-icerik">
+      <h2 id="karsilama-metni" class="karsilama-baslik">Merhaba! 👋</h2>
+      <p class="karsilama-alt">Bugün nasıl hissediyorsun?</p>
+      <button class="btn-mor" style="width: auto; padding: 1rem 3rem; font-size: 1.25rem;" onclick="durumGoster(2)">Analizi Başlat</button>
+    </div>
+
+    <!-- STATE 2: KAMERA -->
+    <div id="state-2" class="state">
+      <div class="kamera-layout">
+      <!-- Sol Panel -->
+      <div class="kamera-sol">
+        <div id="video-wrapper" class="video-container">
+          <div class="kose-dekor tl"></div>
+          <div class="kose-dekor tr"></div>
+          <div class="kose-dekor bl"></div>
+          <div class="kose-dekor br"></div>
+          <video id="kamera-feed" autoplay playsinline></video>
+        </div>
+
+        <div class="kamera-kontroller">
+          <div class="tur-secici" id="tur-listesi">
+            <!-- JS ile doldurulacak -->
+          </div>
+          <button class="btn-yesil-pill" onclick="analizBaslat()">🎵 Ruh Halini Analiz Et</button>
+        </div>
+      </div>
+
+      <!-- Sağ Panel (Duygu) -->
+      <div class="kamera-sag">
+        <div id="radial-glow" class="radial-bg"></div>
+        
+        <!-- Analiz Öncesi Bekleme -->
+        <div id="bekleme-durumu" style="z-index: 1;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--metin-soluk)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;"><path d="M12 2v20M17 5v14M7 5v14M22 10v4M2 10v4"/></svg>
+          <p style="color: var(--metin-soluk)">Kamerana bak ve analiz et butonuna tıkla.</p>
+        </div>
+
+        <!-- Analiz Sonucu -->
+        <div id="sonuc-durumu" class="duygu-icerik" style="display: none;">
+          <div id="d-emoji" class="duygu-emoji">😊</div>
+          <h2 id="d-isim" class="duygu-baslik">Mutlu</h2>
+          <p id="d-aciklama" style="color: var(--metin-ana); font-size: 1.1rem; margin-bottom: 1rem;"></p>
+          
+          <div class="guven-konteyner" id="d-guven-kutu">
+            <div class="guven-text">
+              <span>Doğruluk Payı</span>
+              <span id="d-yuzde" class="sayilar">%0</span>
+            </div>
+            <div class="guven-bar-bg">
+              <div id="d-bar" class="guven-bar-fill"></div>
+            </div>
+          </div>
+
+          <div id="d-alt-duygular" class="alt-duygular"></div>
+        </div>
+        </div>
+      </div>
+      
+      <!-- SONUÇLAR (Şarkılar) -->
+      <div id="sonuclar-alani" class="sonuclar-layout" style="display: none; margin-top: 2rem; position: static;">
+        <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Senin Müziğin</h2>
+        <p style="color: var(--metin-soluk); cursor: pointer;" onclick="arayuzRenginiSifirla()">← Yeniden analiz et</p>
+        
+        <div id="sarki-listesi" class="sarki-grid">
+          <!-- JS ile eklenecek -->
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE 3: ANALİZ EDİLİYOR (Overlay) -->
+    <div id="state-3" class="state overlay">
+      <div class="tarayici"></div>
+      <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Ruh halin analiz ediliyor...</h2>
+      <p style="color: var(--metin-soluk);">Bu sadece bir saniye sürer</p>
+    </div>
+
+    <!-- STATE 5: PROFİL -->
+    <div id="state-5" class="state profil-layout">
+      <div class="profil-ust">
+        <img id="p-avatar" class="profil-avatar" src="" alt="">
+        <h2 id="p-isim" style="font-size: 2rem;">İsim</h2>
+        <p id="p-email" style="color: var(--metin-soluk);"></p>
+
+        <div class="istatistik-grid">
+          <div class="istatistik-kart">
+            <div id="ist-toplam" class="ist-deger sayilar">0</div>
+            <div class="ist-etiket">Toplam Analiz</div>
+          </div>
+          <div class="istatistik-kart">
+            <div id="ist-duygu" class="ist-deger">Yok</div>
+            <div class="ist-etiket">En Sık Duygu</div>
+          </div>
+          <div class="istatistik-kart">
+            <div id="ist-tur" class="ist-deger" style="text-transform: capitalize;">Yok</div>
+            <div class="ist-etiket">Favori Tür</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem;">Duygu Geçmişin</h3>
+        <div id="profil-chart">
+          <p style="color: var(--metin-soluk);">Henüz veri yok.</p>
+        </div>
+      </div>
+
+      <div class="chart-container" style="margin-top: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: var(--vurgu-mor);">Senin Müzik Ruhun</h3>
+        <p id="p-muzik-ruhu" style="font-size: 1.25rem; font-weight: 500;">Profilin oluşturuluyor...</p>
+        <p id="p-muzik-detay" style="color: var(--metin-soluk); margin-top: 0.5rem; line-height: 1.6;"></p>
+        
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Geçmiş Önerilen Şarkıların:</h4>
+        <div id="p-sarki-listesi" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: none;">
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE 6: GEÇMİŞ -->
+    <div id="state-6" class="state profil-layout">
+      <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Geçmiş Oturumlar</h2>
+      <div id="gecmis-listesi">
+        <p style="color: var(--metin-soluk);">Henüz geçmiş analiziniz bulunmuyor.</p>
+      </div>
+    </div>
+
+  </div> <!-- App Wrapper Son -->
+
+  <script>
+    // --------------------------------------------------------
+    // FIREBASE YAPILANDIRMASI (BURAYI KENDİ BİLGİLERİNİZLE DOLDURUN)
+    // --------------------------------------------------------
+    const firebaseAyarlari = {
+      apiKey           : "AIzaSyBcI4g0zpCvbfzYRY3hjbMim0IvkuCao-U",
+      authDomain       : "moodify-f625c.firebaseapp.com",
+      projectId        : "moodify-f625c",
+      storageBucket    : "moodify-f625c.firebasestorage.app",
+      messagingSenderId: "52157707332",
+      appId            : "1:52157707332:web:f42d707e68af049524f811"
+    };
+
+    let auth = null;
+    let db = null;
+    let aktifKullanici = null;
+    let aktifDurum = 0;
+    let misafirModu = false;
+    let stream = null;
+    let aktifAudio = null;
+    let gecmisOturumlar = [];
+
+    if (firebaseAyarlari.apiKey !== "FIREBASE_API_KEY") {
+      firebase.initializeApp(firebaseAyarlari);
+      auth = firebase.auth();
+      db = firebase.firestore();
+
+      auth.onAuthStateChanged((kullanici) => {
+        if (kullanici) {
+          aktifKullanici = kullanici;
+          misafirModu = false;
+          kullaniciBilgisiGuncelle();
+          if (aktifDurum === 0) durumGoster(1);
+          gecmisiCek();
+        } else {
+          aktifKullanici = null;
+          durumGoster(0);
+        }
+      });
+    } else {
+      durumGoster(0);
+    }
+
+    // --------------------------------------------------------
+    // UI DURUM (STATE) YÖNETİMİ
+    // --------------------------------------------------------
+    
+    function durumGoster(durumNo) {
+      if (durumNo !== 0 && !aktifKullanici) return; // Güvenlik
+      
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      
+      if (durumNo === 0) {
+        document.getElementById('state-0').classList.add('active');
+        document.getElementById('app-wrapper').style.display = 'none';
+      } else {
+        document.getElementById('app-wrapper').style.display = 'flex';
+        document.getElementById(`state-${durumNo}`).classList.add('active');
+        
+        if (durumNo === 2) baslatKamera();
+        else durdurKamera();
+        
+        if (durumNo === 5) profilGuncelle();
+      }
+      
+      window.scrollTo({ top: 0, behavior: "auto" });
+      aktifDurum = durumNo;
+    }
+
+    // --------------------------------------------------------
+    // AUTH (GİRİŞ) İŞLEMLERİ
+    // --------------------------------------------------------
+
+    function tabDegistir(tab, btnElement) {
+      document.getElementById('form-giris').style.display = tab === 'giris' ? 'block' : 'none';
+      document.getElementById('form-kayit').style.display = tab === 'kayit' ? 'block' : 'none';
+      document.querySelectorAll('.auth-tab').forEach(el => el.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+    }
+
+    function hataGoster(id, mesaj) {
+      const el = document.getElementById(id);
+      if (mesaj) {
+        el.innerText = mesaj;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    function sifreGoster(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Firebase Auth Fonksiyonları
+    async function googleIleGiris() {
+      if (!auth) return alert("Firebase ayarları eksik.");
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await auth.signInWithPopup(provider);
+      } catch (e) {
+        console.error(e);
+        alert("Google girişi başarısız oldu.");
+      }
+    }
+
+    async function epostaKayitTetikle() {
+      if (!auth) return alert("Firebase ayarları yapılmamış.");
+      const ad = document.getElementById('kayit-ad').value;
+      const email = document.getElementById('kayit-email').value;
+      const sifre = document.getElementById('kayit-sifre').value;
+      
+      hataGoster('kayit-hata', null);
+      if (!ad || !email || sifre.length < 6) return hataGoster('kayit-hata', "Lütfen tüm alanları geçerli doldurun (Şifre min. 6 karakter).");
+
+      try {
+        const kred = await auth.createUserWithEmailAndPassword(email, sifre);
+        await kred.user.updateProfile({ displayName: ad });
+        window.location.reload(); // display name güncellenmesi için
+      } catch (e) {
+        let msg = "Bir hata oluştu.";
+        if (e.code === 'auth/email-already-in-use') msg = "Bu e-posta zaten kullanımda.";
+        if (e.code === 'auth/invalid-email') msg = "Geçersiz e-posta adresi.";
+        hataGoster('kayit-hata', msg);
+      }
+    }
+
+    async function epostaGirisTetikle() {
+      if (!auth) return alert("Firebase ayarları yapılmamış.");
+      const email = document.getElementById('giris-email').value;
+      const sifre = document.getElementById('giris-sifre').value;
+      
+      hataGoster('giris-hata', null);
+      if (!email || !sifre) return hataGoster('giris-hata', "Lütfen e-posta ve şifrenizi girin.");
+
+      try {
+        await auth.signInWithEmailAndPassword(email, sifre);
+      } catch (e) {
+        hataGoster('giris-hata', "E-posta veya şifre hatalı.");
+      }
+    }
+
+    async function cikisYap() {
+      if (auth) await auth.signOut();
+      window.location.reload();
+    }
+
+    function kullaniciBilgisiGuncelle() {
+      const ad = aktifKullanici.displayName || aktifKullanici.email.split('@')[0];
+      const pp = aktifKullanici.photoURL || `https://ui-avatars.com/api/?name=${ad}&background=7B6EF6&color=fff`;
+      
+      document.getElementById('karsilama-metni').innerText = `Merhaba, ${ad.split(' ')[0]}! 👋`;
+      document.getElementById('header-avatar').src = pp;
+      
+      document.getElementById('p-isim').innerText = ad;
+      document.getElementById('p-email').innerText = aktifKullanici.email;
+      document.getElementById('p-avatar').src = pp;
+      
+      const dropdown = document.getElementById('user-dropdown');
+      dropdown.innerHTML = `
+        <button class="dropdown-item" onclick="durumGoster(5); toggleDropdown()">Profilim</button>
+        <button class="dropdown-item" onclick="durumGoster(6); toggleDropdown()">Geçmişim</button>
+        <button class="dropdown-item" style="color: var(--duygu-sinirli)" onclick="cikisYap(); toggleDropdown()">Çıkış Yap</button>
+      `;
+    }
+
+    function toggleDropdown() {
+      document.getElementById('user-dropdown').classList.toggle('show');
+    }
+
+    // --------------------------------------------------------
+    // DUYGU VE TÜR VERİLERİ
+    // --------------------------------------------------------
+    const TURLER = ["türkçe pop", "pop", "rock", "caz", "klasik", "elektronik", "hip-hop", "r&b", "indie", "metal", "blues"];
+    let seciliTur = "türkçe pop";
+
+    function turleriOlustur() {
+      const container = document.getElementById('tur-listesi');
+      container.innerHTML = '';
+      TURLER.forEach(tur => {
+        const btn = document.createElement('button');
+        btn.className = `tur-pill ${tur === seciliTur ? 'secili' : ''}`;
+        btn.innerText = tur.replace(/\b\w/g, l => l.toUpperCase());
+        btn.onclick = () => {
+          seciliTur = tur;
+          turleriOlustur();
+        };
+        container.appendChild(btn);
+      });
+    }
+    turleriOlustur();
+
+    const DUYGU_RENKLERI = {
+      "happy": "var(--duygu-mutlu)",
+      "sad": "var(--duygu-huzunlu)",
+      "angry": "var(--duygu-sinirli)",
+      "surprised": "var(--duygu-saskin)",
+      "fearful": "var(--duygu-endiseli)",
+      "disgusted": "var(--duygu-rahatsiz)",
+      "neutral": "var(--duygu-notr)",
+      "calm": "var(--duygu-sakin)"
+    };
+    const EMOJILER = { "happy":"😄", "sad":"😢", "angry":"😠", "surprised":"😲", "fearful":"😨", "disgusted":"😒", "neutral":"😐", "calm":"😌" };
+
+    function arayuzRenginiAyarla(duyguKey) {
+      const renk = DUYGU_RENKLERI[duyguKey] || DUYGU_RENKLERI["neutral"];
+      document.documentElement.style.setProperty('--glow-renk', renk);
+      
+      const vWrap = document.getElementById('video-wrapper');
+      const rGlow = document.getElementById('radial-glow');
+      const koseler = document.querySelectorAll('.kose-dekor');
+      
+      vWrap.classList.add('glow');
+      rGlow.classList.add('show');
+      koseler.forEach(k => k.classList.add('glow'));
+    }
+
+    function arayuzRenginiSifirla() {
+      document.getElementById('video-wrapper').classList.remove('glow');
+      document.getElementById('radial-glow').classList.remove('show');
+      document.querySelectorAll('.kose-dekor').forEach(k => k.classList.remove('glow'));
+      
+      document.getElementById('bekleme-durumu').style.display = 'block';
+      document.getElementById('sonuc-durumu').style.display = 'none';
+      document.getElementById('sonuclar-alani').style.display = 'none';
+      document.getElementById('d-emoji').classList.remove('goster');
+      document.getElementById('d-guven-kutu').style.display = 'none';
+      
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // --------------------------------------------------------
+    // KAMERA VE ANALİZ
+    // --------------------------------------------------------
+
+    async function baslatKamera() {
+      arayuzRenginiSifirla();
+      const video = document.getElementById('kamera-feed');
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error("Kamera açılamadı:", err);
+      }
+    }
+
+    function durdurKamera() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+    }
+
+    function frameAl() {
+      const video = document.getElementById('kamera-feed');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    async function analizBaslat() {
+      if (!stream) return alert("Kamera aktif değil!");
+      
+      const base64Img = frameAl();
+      durumGoster(3); // Analiz ediliyor overlay
+
+      try {
+        const res = await fetch("https://api-xcz2jfjija-uc.a.run.app/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64Img, tur: seciliTur })
+        });
+        
+        const veri = await res.json();
+        
+        if (!veri.basari) {
+          alert("Analiz başarısız: " + veri.hata);
+          durumGoster(2);
+          return;
+        }
+
+        durumGoster(2); // Kameraya dön ama sonucu göster
+        sonucuYansit(veri.duygu);
+        
+        // Şarkıları arka planda state-4'e hazırla
+        sarkilariOlustur(veri.parcalar, veri.duygu.ana_duygu);
+        
+        // Firebase Kayıt
+        if (aktifKullanici) oturumKaydet(veri.duygu, seciliTur, veri.parcalar);
+        
+        // 2 saniye sonra müzikleri göster ve aşağı kaydır
+        setTimeout(() => {
+          document.getElementById('sonuclar-alani').style.display = 'flex';
+          const yOffset = -80; // Header offset
+          const element = document.getElementById('sonuclar-alani');
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({top: y, behavior: 'smooth'});
+        }, 2500);
+
+      } catch (e) {
+        alert("Sunucuya bağlanılamadı.");
+        durumGoster(2);
+      }
+    }
+
+    function sonucuYansit(duygu) {
+      document.getElementById('bekleme-durumu').style.display = 'none';
+      const s = document.getElementById('sonuc-durumu');
+      s.style.display = 'flex';
+
+      const dKey = duygu.ana_duygu;
+      arayuzRenginiAyarla(dKey);
+
+      const emojiEl = document.getElementById('d-emoji');
+      emojiEl.innerText = EMOJILER[dKey] || "🤖";
+      emojiEl.classList.remove('goster');
+      void emojiEl.offsetWidth; // reflow
+      emojiEl.classList.add('goster');
+
+      document.getElementById('d-isim').innerText = duygu.etiket;
+      document.getElementById('d-aciklama').innerText = duygu.aciklama;
+      
+      const yuzde = Math.round(duygu.guven * 100);
+      document.getElementById('d-yuzde').innerText = `%${yuzde}`;
+      document.getElementById('d-guven-kutu').style.display = 'block';
+      
+      setTimeout(() => {
+        document.getElementById('d-bar').style.width = `${yuzde}%`;
+      }, 100);
+
+      const altKutu = document.getElementById('d-alt-duygular');
+      altKutu.innerHTML = '';
+      Object.entries(duygu.tum_duygular).forEach(([k, v]) => {
+        if (k !== dKey && v > 0.05) {
+          altKutu.innerHTML += `<div class="alt-duygu-pill">${k}: %${Math.round(v*100)}</div>`;
+        }
+      });
+    }
+
+    // --------------------------------------------------------
+    // ŞARKILAR VE SES OYNATICI
+    // --------------------------------------------------------
+
+    function sarkilariOlustur(parcalar, duyguKey) {
+      const liste = document.getElementById('sarki-listesi');
+      liste.innerHTML = '';
+      const renk = DUYGU_RENKLERI[duyguKey] || 'var(--vurgu-yesil)';
+
+      if (!parcalar || parcalar.length === 0) {
+        liste.innerHTML = '<p style="color:var(--metin-soluk)">Bu kritere uygun şarkı bulunamadı.</p>';
+        return;
+      }
+
+      parcalar.forEach((p, i) => {
+        const kart = document.createElement('div');
+        kart.className = 'sarki-kart';
+        kart.innerHTML = `
+          <img src="${p.kapak_url || 'https://via.placeholder.com/64'}" class="sarki-kapak">
+          <div class="sarki-bilgi">
+            <div class="sarki-isim">${p.isim}</div>
+            <div class="sarki-sanatci">${p.sanatci}</div>
+          </div>
+          ${p.onizleme_url ? `<button class="play-btn" onclick="sesOynat(this, '${p.onizleme_url}', '${renk}')">▶</button>` : ''}
+          <a href="${p.spotify_url}" target="_blank" class="btn-metin" style="margin-left: 0.5rem;">Spotify'da Aç</a>
+        `;
+        liste.appendChild(kart);
+
+        // Stagger animasyonu
+        setTimeout(() => kart.classList.add('kart-goster'), 100 * i);
+      });
+    }
+
+    function sesOynat(btn, url, renk) {
+      if (aktifAudio) {
+        aktifAudio.pause();
+        document.querySelectorAll('.play-btn').forEach(b => {
+          b.innerText = '▶'; b.style.background = 'var(--vurgu-yesil)';
+        });
+        if (aktifAudio.src === url) { aktifAudio = null; return; }
+      }
+      aktifAudio = new Audio(url);
+      aktifAudio.play();
+      btn.innerText = '⏸';
+      btn.style.background = renk;
+      
+      aktifAudio.onended = () => {
+        btn.innerText = '▶';
+        btn.style.background = 'var(--vurgu-yesil)';
+        aktifAudio = null;
+      };
+    }
+
+    // --------------------------------------------------------
+    // FİRESTORE - GEÇMİŞ VE PROFİL
+    // --------------------------------------------------------
+
+    async function oturumKaydet(duygu, tur, parcalar) {
+      if (!db || !aktifKullanici) return;
+      try {
+        await db.collection("oturumlar").add({
+          kullaniciId: aktifKullanici.uid,
+          zaman: firebase.firestore.FieldValue.serverTimestamp(),
+          duygu: duygu.ana_duygu,
+          etiket: duygu.etiket,
+          guven: duygu.guven,
+          tur: tur,
+          parcalar: parcalar.slice(0, 3)
+        });
+        gecmisiCek();
+      } catch (e) {
+        console.error("Kaydedilemedi:", e);
+      }
+    }
+
+    async function gecmisiCek() {
+      if (!db || !aktifKullanici) return;
+      try {
+        const snap = await db.collection("oturumlar")
+          .where("kullaniciId", "==", aktifKullanici.uid)
+          .orderBy("zaman", "desc")
+          .get();
+          
+        gecmisOturumlar = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        gecmisUIOlustur();
+      } catch (e) {
+        console.error("Geçmiş çekilemedi:", e);
+      }
+    }
+
+    function gecmisUIOlustur() {
+      const liste = document.getElementById('gecmis-listesi');
+      liste.innerHTML = '';
+      
+      if (gecmisOturumlar.length === 0) {
+        liste.innerHTML = '<p style="color:var(--metin-soluk)">Henüz geçmiş analiziniz bulunmuyor.</p>';
+        return;
+      }
+
+      gecmisOturumlar.forEach(o => {
+        const div = document.createElement('div');
+        div.className = 'gecmis-kart';
+        const tarih = o.zaman ? o.zaman.toDate().toLocaleDateString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Şimdi';
+        
+        div.innerHTML = `
+          <div>
+            <div class="gecmis-tarih">${tarih}</div>
+            <span class="gecmis-rozet" style="color:${DUYGU_RENKLERI[o.duygu]}">${EMOJILER[o.duygu]} ${o.etiket}</span>
+            <span class="gecmis-rozet">${o.tur}</span>
+          </div>
+          <div style="display:flex; margin-left:1rem;">
+            ${(o.parcalar||[]).map(p => `<img src="${p.kapak_url}" style="width:40px; height:40px; border-radius:50%; margin-left:-10px; border:2px solid var(--arka-plan-yuzey)">`).join('')}
+          </div>
+        `;
+        liste.appendChild(div);
+      });
+    }
+
+    function profilGuncelle() {
+      if (gecmisOturumlar.length === 0) return;
+      
+      document.getElementById('ist-toplam').innerText = gecmisOturumlar.length;
+      
+      // En sık duygu ve tür hesaplama
+      const dSay = {}; const tSay = {};
+      gecmisOturumlar.forEach(o => {
+        dSay[o.etiket] = (dSay[o.etiket] || 0) + 1;
+        tSay[o.tur] = (tSay[o.tur] || 0) + 1;
+      });
+      
+      const enSikDuygu = Object.keys(dSay).reduce((a, b) => dSay[a] > dSay[b] ? a : b);
+      const enSikTur = Object.keys(tSay).reduce((a, b) => tSay[a] > tSay[b] ? a : b);
+      
+      document.getElementById('ist-duygu').innerText = enSikDuygu;
+      document.getElementById('ist-tur').innerText = enSikTur;
+
+      // CSS Chart
+      const chartKutu = document.getElementById('profil-chart');
+      chartKutu.innerHTML = '';
+      
+      Object.entries(dSay).sort((a,b) => b[1]-a[1]).forEach(([etiket, sayi]) => {
+        const yuzde = Math.round((sayi / gecmisOturumlar.length) * 100);
+        const orjinalKey = Object.keys(DUYGU_ETIKETLERI).find(k => DUYGU_ETIKETLERI[k] === etiket) || "neutral";
+        const renk = DUYGU_RENKLERI[orjinalKey];
+        
+        chartKutu.innerHTML += `
+          <div class="chart-row">
+            <div class="chart-label">${etiket}</div>
+            <div class="chart-bar-bg">
+              <div class="chart-bar-fill" style="width: 0%; background: ${renk}" data-hedef="${yuzde}"></div>
+            </div>
+            <div class="chart-pct">%${yuzde}</div>
+          </div>
+        `;
+      });
+
+      // Müzik Karakter Analizi
+      const pRuhu = document.getElementById('p-muzik-ruhu');
+      const pDetay = document.getElementById('p-muzik-detay');
+      const pSarkilar = document.getElementById('p-sarki-listesi');
+      pSarkilar.innerHTML = '';
+      
+      let tumSarkilar = [];
+      gecmisOturumlar.forEach(o => {
+         if(o.parcalar) tumSarkilar.push(...o.parcalar);
+      });
+      
+      const essizSarkilar = [];
+      const sarkiIDleri = new Set();
+      tumSarkilar.forEach(s => {
+         if(!sarkiIDleri.has(s.isim)) {
+            sarkiIDleri.add(s.isim);
+            essizSarkilar.push(s);
+         }
+      });
+      
+      if(enSikDuygu === 'Mutlu' || enSikTur === 'pop') {
+         pRuhu.innerText = "Enerjik ve Pozitif Bir Dinleyici";
+         pDetay.innerText = `Müzik zevkine göre pozitif enerjili ve ritmik şarkılar favorin. Daha çok ${enSikTur} türünde müzikler dinleyerek içindeki neşeyi yansıtıyorsun. Seni mutlu eden şarkılar her zaman çalma listende!`;
+      } else if (enSikDuygu === 'Hüzünlü' || enSikDuygu === 'Korkmuş') {
+         pRuhu.innerText = "Derin ve Duygusal Bir Ruh";
+         pDetay.innerText = `Sözlere ve melodilerin derinliğine odaklanıyorsun. Genellikle duygusal anlarında ${enSikTur} türü sana yoldaşlık ediyor. İçsel yolculuğunda müziği bir araç olarak kullanıyorsun.`;
+      } else {
+         pRuhu.innerText = "Dengeli ve Açık Fikirli";
+         pDetay.innerText = `Farklı ruh hallerine göre farklı tarzları keşfetmeyi seviyorsun. ${enSikTur} öncelikli olsa da, duruma göre her tür müziğe açıksın.`;
+      }
+      
+      essizSarkilar.slice(0, 10).forEach(s => {
+         pSarkilar.innerHTML += `
+            <div style="flex-shrink: 0; width: 100px; text-align: center;">
+               <a href="${s.spotify_url}" target="_blank" style="text-decoration:none; color:inherit;">
+                 <img src="${s.kapak_url}" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover;">
+                 <div style="font-size: 0.75rem; margin-top: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.isim}</div>
+                 <div style="font-size: 0.65rem; color: var(--metin-soluk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.sanatci}</div>
+               </a>
+            </div>
+         `;
+      });
+
+      setTimeout(() => {
+        document.querySelectorAll('.chart-bar-fill').forEach(b => {
+          b.style.width = b.getAttribute('data-hedef') + '%';
+        });
+      }, 100);
+    }
+
+    // Tıklamalarla dropdown kapat
+    window.onclick = function(e) {
+      if (!e.target.closest('.user-menu')) {
+        document.getElementById('user-dropdown').classList.remove('show');
+      }
+    }
+  </script>
+</body>
+</html>
