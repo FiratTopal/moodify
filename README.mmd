@@ -1,0 +1,87 @@
+# Moodify
+
+A web app that reads your facial expression through the camera, figures out your mood, and suggests music that fits it. You pick a genre, and the songs are matched to the detected emotion.
+
+Live demo: [moodifyapp.org](https://moodifyapp.org/)
+
+## Features
+- Face and emotion analysis using your camera
+- Music suggestions based on your mood and the genre you choose
+- Sign up and log in with email and password, or with Google
+- Dashboard with your total analyses, most frequent emotion and favorite genre
+- Emotion spectrum and a "musical character" profile built from your past analyses
+- Session history and favorite songs
+- Profile settings to change your email or password (asks you to re-verify first)
+
+## Tech Stack
+- Firebase Hosting
+- Firebase Cloud Functions
+- Cloud Firestore
+- Firestore Security Rules
+
+## Project Structure
+- `public/`: frontend files
+- `functions/`: Cloud Functions code
+- `firestore.rules`: Firestore security rules
+- `firestore.indexes.json`: Firestore indexes
+- `firebase.json`: Firebase config
+
+## Getting Started
+1. Clone the repo:
+   `git clone https://github.com/FiratTopal/moodify.git`
+2. Install the Firebase CLI and log in:
+   `npm install -g firebase-tools`
+   `firebase login`
+3. Install the functions dependencies:
+   `cd functions && npm install && cd ..`
+4. Run it locally:
+   `firebase emulators:start`
+5. Deploy:
+   `firebase deploy`
+
+## Author
+GitHub: [@FiratTopal](https://github.com/FiratTopal)
+
+# Moodify
+
+Yapay zeka destekli yüz ve duygu analizine dayalı, kişiselleştirilmiş müzik keşif platformu. Kullanıcı kamerayı açıp analiz başlatır, sistem yüz ifadesinden ruh halini tespit eder ve seçilen müzik türüne göre ruh haline uygun şarkılar önerir.
+
+🔗 **Canlı Demo:** [moodifyapp.org](https://moodifyapp.org/)
+
+## Özellikler
+- **Yüz ve duygu analizi:** Kamera üzerinden yüz ifadesini analiz ederek ruh halini belirler
+- **Duyguya göre müzik önerisi:** Kullanıcının seçtiği müzik türüne ve tespit edilen duyguya göre şarkı önerir
+- **Kullanıcı hesabı:** E-posta/şifre ile kayıt ve giriş, Google ile giriş
+- **Kontrol paneli:** Toplam analiz sayısı, en sık hissedilen duygu ve favori müzik türü istatistikleri
+- **Duygu spektrumu ve müzikal karakter:** Geçmiş analizlerden kullanıcının duygu dağılımı ve müzikal profili çıkarılır
+- **Geçmiş oturumlar ve favoriler:** Yapılan analizler ve favori şarkılar kaydedilir
+- **Profil ayarları:** E-posta ve şifre güncelleme (güvenlik doğrulamalı)
+
+## Kullanılan Teknolojiler
+- **Firebase Hosting:** Uygulamanın yayınlanması
+- **Firebase Cloud Functions:** Sunucu tarafı işlemler
+- **Cloud Firestore:** Kullanıcı verileri ve analiz geçmişinin saklanması
+- **Firestore Security Rules:** Veritabanı erişim güvenliği
+
+## Proje Yapısı
+- `public/`: Arayüz (frontend) dosyaları
+- `functions/`: Cloud Functions kodları
+- `firestore.rules`: Firestore güvenlik kuralları
+- `firestore.indexes.json`: Firestore index tanımları
+- `firebase.json`: Firebase proje yapılandırması
+
+## Kurulum ve Çalıştırma
+1. Repoyu klonla:
+   `git clone https://github.com/FiratTopal/moodify.git`
+2. Firebase CLI'ı kur ve giriş yap:
+   `npm install -g firebase-tools`
+   `firebase login`
+3. Functions bağımlılıklarını yükle:
+   `cd functions && npm install && cd ..`
+4. Yerelde çalıştır:
+   `firebase emulators:start`
+5. Yayınlamak için:
+   `firebase deploy`
+
+## Geliştirici
+GitHub: [@FiratTopal](https://github.com/FiratTopal)
